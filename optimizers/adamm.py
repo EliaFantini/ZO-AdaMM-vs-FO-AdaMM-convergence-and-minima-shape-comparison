@@ -55,8 +55,8 @@ class AdaMM(Optimizer):
                         state['step'] = 0
 
                     # Do the updates for this parameter
-                    state['gradient_avg'].mul_(beta1).add_(p.grad, alpha=(1 - beta1))
-                    state['gradient_second_moment'].mul_(beta2).addcmul_(p.grad, p.grad, value=(1 - beta2))
+                    state['gradient_avg'].mul_(beta1).add_(p.grad.data, alpha=(1.0 - beta1))
+                    state['gradient_second_moment'].mul_(beta2).addcmul_(p.grad.data, p.grad.data, value=(1.0 - beta2))
                     state['step'] += 1
 
                     # TODO : Correct for the zero-bias ?
@@ -69,4 +69,4 @@ class AdaMM(Optimizer):
                     # TODO : if F is R^d, then the projection is the identity,
                     #  but then no zero-bias correction as in Adam ?
                     #  See pseudo code from PyTorch
-                    p.data.addcdiv_(state['gradient_avg'], state['gradient_second_moment'].sqrt() + group['epsilon'], value=(-group['lr']))
+                    p.data.addcdiv_(state['gradient_avg'], state['gradient_second_moment'].sqrt().add_(group['epsilon']), value=(-group['lr']))
