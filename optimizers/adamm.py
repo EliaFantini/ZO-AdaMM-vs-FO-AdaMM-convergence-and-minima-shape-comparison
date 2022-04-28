@@ -51,13 +51,22 @@ class AdaMM(Optimizer):
                         state['gradient_second_moment'] = torch.zeros_like(p)
                         state['gradient_max_second_moment'] = torch.zeros_like(p)
 
+                        # Keep track of the number of step we updated this parameter
+                        state['step'] = 0
+
                     # Do the updates for this parameter
-                    state['gradient_avg'] = beta1 * state['gradient_avg'] + (1 - beta1) * p.grad
-                    state['gradient_second_moment'] = beta2 * state['gradient_second_moment'] + \
-                                                      (1 - beta2) * (p.grad * p.grad)
-                    state['gradient_max_second_moment'] = torch.maximum(state['gradient_max_second_moment'],
-                                                                        state['gradient_second_moment'])
+                    state['gradient_avg'].mul_(beta1).add_(p.grad, alpha=(1 - beta1))
+                    state['gradient_second_moment'].mul_(beta2).addcmul_(p.grad, p.grad, value=(1 - beta2))
+                    state['step'] += 1
+
+                    # TODO : Correct for the zero-bias ?
+                    #grad_avg_hat = state['gradient_avg'] / (1 - beta1 ** state['step'])
+                    #grad_second_moment_hat = state['gradient_second_moment'] / (1 - beta2 ** state['step'])
+
+                    state['gradient_max_second_moment_hat'] = torch.maximum(state['gradient_max_second_moment'],
+                                                                            state['gradient_second_moment'])
 
                     # TODO : if F is R^d, then the projection is the identity,
                     #  but then no zero-bias correction as in Adam ?
-
+                    #  See pseudo code from PyTorch
+                    p.data.addcdiv_(state['gradient_avg'], state['gradient_second_moment'].sqrt(), value=(-group['lr']))
