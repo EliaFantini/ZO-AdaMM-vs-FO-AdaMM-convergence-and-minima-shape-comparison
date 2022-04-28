@@ -69,4 +69,4 @@ class AdaMM(Optimizer):
                     # TODO : if F is R^d, then the projection is the identity,
                     #  but then no zero-bias correction as in Adam ?
                     #  See pseudo code from PyTorch
-                    p.data.addcdiv_(state['gradient_avg'], state['gradient_second_moment'].sqrt(), value=(-group['lr']))
+                    p.data.addcdiv_(state['gradient_avg'], state['gradient_second_moment'].sqrt() + group['epsilon'], value=(-group['lr']))
