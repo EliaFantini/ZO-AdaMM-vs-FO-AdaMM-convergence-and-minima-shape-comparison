@@ -48,6 +48,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
                     # u = torch.normal(mean = torch.zeros(size_params),std = 100)
                     u = 2 * (torch.rand(size_params) - 0.5)  # need small modif in order to be on the unit sphere
                     u.div_(torch.norm(u, "fro"))
+                    u = u.to(device)
 
                     # save the state of the model
                     model_init = dict(model.state_dict())
@@ -62,7 +63,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
                         start_ind = end_ind
 
                     # evaluation of the model and the with a random perturbation of the parameters
-                    output2 = model(input)
+                    output2 = model(inputs)
                     loss_random = criterion(output2, labels)
 
                     # compute the "gradient norm"

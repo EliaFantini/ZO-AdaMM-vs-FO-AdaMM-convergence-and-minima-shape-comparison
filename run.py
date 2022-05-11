@@ -12,7 +12,7 @@ sys.path.append('..')
 CONFIG_PATH = 'config.json'
 
 
-def main(use_default_config=True, config=None):
+def main(use_default_config=True, config=None, zo_optim=False):
     """
     Main function that loads the data, instantiates data loaders and model, trains the model and
     outputs predictions.
@@ -20,6 +20,8 @@ def main(use_default_config=True, config=None):
     True to use config.json as config dictionary. Default is True
     :param config: dict
     Dictionary containing all parameters, ignored if use_default_config is set to True. Default is None
+    :param zo_optim: boolean
+    True to use a zero order optimizer
     """
     if use_default_config:
         config = json.load(open(CONFIG_PATH))
@@ -72,7 +74,8 @@ def main(use_default_config=True, config=None):
     else:
         raise ValueError('The chosen optimizer in config is not valid')
 
-    return train(model, optimizer, criterion, training_loader, validation_loader, device, nb_epochs=config['epochs'], verbose=True)
+    return train(model, optimizer, criterion, training_loader, validation_loader, device,
+                 nb_epochs=config['epochs'], verbose=True, zo_optim=zo_optim)
 
 
 if __name__ == '__main__':
