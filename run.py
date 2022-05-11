@@ -4,6 +4,7 @@ import torch
 import torchvision
 from torch.nn import CrossEntropyLoss
 from optimizers.adamm import AdaMM
+from optimizers.zo_adamm import ZO_AdaMM
 from torch.utils.data import DataLoader
 from utils import train, fix_seeds
 sys.path.append('..')
@@ -65,7 +66,9 @@ def main(use_default_config=True, config=None):
     elif config['optimizer'] == 'Our-AdaMM':
         optimizer = AdaMM(model.parameters(), lr=1e-3, beta1=0.9, beta2=0.999, epsilon=1e-8)
     elif config['optimizer'] == 'ZO-AdaMM':
-        optimizer = None
+        optimizer = ZO_AdaMM(model.parameters(), lr=config['lr'],
+                             betas=(config['beta1'], config['beta2']),
+                             mu=config['mu'], eps=1e-8)
     else:
         raise ValueError('The chosen optimizer in config is not valid')
 
