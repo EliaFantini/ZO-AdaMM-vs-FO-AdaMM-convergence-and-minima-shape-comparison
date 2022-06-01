@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import time
+from tqdm import tqdm
 
 
 def train(model, optimizer, criterion, training_loader, validation_loader,
@@ -17,7 +18,6 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
         mu_init = optimizer.param_groups[0]['mu']
 
     for epoch in range(nb_epochs):
-
         if zo_optim:
             # Change the learning rate, TODO : use scheduler
             optimizer.param_groups[0]['lr'] = max(lr_init / (np.sqrt(10) ** (epoch / 4.)), 1e-5)
@@ -29,7 +29,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
         model.train()
         training_loss = 0.0
 
-        for data in training_loader:
+        for data in tqdm(training_loader):
             inputs, labels = data
             inputs = inputs.to(device)
             labels = labels.to(device)
