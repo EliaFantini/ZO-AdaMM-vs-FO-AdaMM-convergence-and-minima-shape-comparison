@@ -1,4 +1,5 @@
 import json
+import math
 import sys
 import torch
 import torchvision
@@ -44,10 +45,10 @@ def main(use_default_config=True, config=None):
     if config['dataset'] == 'mnist':
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
         training_dataset = torchvision.datasets.MNIST('data/mnist/', download=True, train=True, transform=transform)
-        training_loader = torch.utils.data.DataLoader(training_dataset, batch_size=10)
+        training_loader = torch.utils.data.DataLoader(training_dataset, batch_size=config['batch_size'])
 
         validation_dataset = torchvision.datasets.MNIST('data/mnist/', download=True, train=False, transform=transform)
-        validation_loader = torch.utils.data.DataLoader(validation_dataset, batch_size=10)
+        validation_loader = torch.utils.data.DataLoader(validation_dataset, batch_size=config['batch_size'])
     if config['dataset'] == 'cifar':
         transform = torchvision.transforms.Compose([
             torchvision.transforms.ToTensor(),
@@ -98,6 +99,9 @@ def main(use_default_config=True, config=None):
     else:
         raise ValueError('The chosen optimizer in config is not valid')
 
+    d = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"d= {d}, sqrt(d)= {math.sqrt(d)}")
+
     if config['zo_optim']:
         with torch.no_grad():
             output =  train(model, optimizer, criterion, training_loader, validation_loader, device,
@@ -113,15 +117,23 @@ opt_params_adamm = [1e-3, 0.9, 0.999, 1e-8]
 
 if __name__ == '__main__':
     config = {
-        "dataset": 'cifar', # cifar, mnist
+        "dataset": 'mnist', # cifar, mnist
         "seed": 23,
-        "batch_size": 100,
-        "net": 'mobilenet',
+        "batch_size": 1000,
+        "net": 'small',
         "optimizer": 'ZO-AdaMM',
-        "opt_params": [1e-03, 0.9, 0.999, 1e-8], #lr,beta1,beta2,epsilon
-        "epochs": 12,
+        "opt_params": [1e-3, 0.9, 0.999, 1e-8], #lr,beta1,beta2,epsilon
+        "epochs": 100,
         "zo_optim": True,
         "mu": 1e-03,
         "verbose": True
     }
     main(False, config)
+"""
+d= 2590, sqrt(d)= 50.89204259999789
+Our Adam Epoch: epoch 1/12 |train loss: 0.8106 |test loss: 0.2653 |acc: 0.9227 |time: 13.5087
+ZO Adam Epoch: epoch 1/100 |train loss: 2.2825 |test loss: 2.2497 |acc: 0.2147 |time: 11.7849
+theoretical: train loss: 0.8106* 50.9 = 41.2595, test loss: 0.2653* 50.9 = 13.5037, acc: 0.9227/50.9 = 0.01812
+51 epochs:
+ZO Adam : epoch 51/100 |train loss: 1.8957 |test loss: 1.8791 |acc: 0.5793 |time: 9.1280
+"""
