@@ -7,7 +7,7 @@ from torch.nn import CrossEntropyLoss
 from optimizers.adamm import AdaMM
 from optimizers.zo_adamm import ZO_AdaMM
 from torch.utils.data import DataLoader
-from utils import train, fix_seeds
+from utils import train, fix_seeds, Scheduler
 from models.small_model import SmallModel
 sys.path.append('..')
 
@@ -85,6 +85,7 @@ def main(use_default_config=True, config=None):
         raise ValueError('The chosen net in config is not valid')
     model = model.to(device)
     criterion = CrossEntropyLoss()
+
     if config['optimizer']=='AdaMM':
         optimizer = torch.optim.Adam(model.parameters(), amsgrad=True)
     elif config['optimizer'] == 'Our-AdaMM':
@@ -98,6 +99,10 @@ def main(use_default_config=True, config=None):
                              mu=config['mu'])
     else:
         raise ValueError('The chosen optimizer in config is not valid')
+    if config['use_scheduler']:
+        scheduler = Scheduler(optimizer, mode = 'min', factor=0.5, patience=2, verbose=True)
+    else:
+        scheduler = None
 
     d = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"d= {d}, sqrt(d)= {math.sqrt(d)}")
@@ -105,10 +110,10 @@ def main(use_default_config=True, config=None):
     if config['zo_optim']:
         with torch.no_grad():
             output =  train(model, optimizer, criterion, training_loader, validation_loader, device,
-                         nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'])
+                         nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler = scheduler)
     else:
         output = train(model, optimizer, criterion, training_loader, validation_loader, device,
-                       nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'])
+                       nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler = scheduler)
     return output
 
 
@@ -119,14 +124,15 @@ if __name__ == '__main__':
     config = {
         "dataset": 'mnist', # cifar, mnist
         "seed": 23,
-        "batch_size": 1000,
+        "batch_size": 100,
         "net": 'small',
         "optimizer": 'ZO-AdaMM',
         "opt_params": [1e-3, 0.9, 0.999, 1e-8], #lr,beta1,beta2,epsilon
         "epochs": 100,
         "zo_optim": True,
         "mu": 1e-03,
-        "verbose": True
+        "verbose": True,
+        "use_scheduler": True
     }
     main(False, config)
 """
@@ -136,4 +142,8 @@ ZO Adam Epoch: epoch 1/100 |train loss: 2.2825 |test loss: 2.2497 |acc: 0.2147 |
 theoretical: train loss: 0.8106* 50.9 = 41.2595, test loss: 0.2653* 50.9 = 13.5037, acc: 0.9227/50.9 = 0.01812
 51 epochs:
 ZO Adam : epoch 51/100 |train loss: 1.8957 |test loss: 1.8791 |acc: 0.5793 |time: 9.1280
+
+
+]Epoch: 8/100 |train loss: 1.1512 |test loss: 1.1094 |acc: 0.6592 |time: 35.5637
+ 1/100 |train loss: 0.1530 |test loss: 0.1277 |acc: 0.9587 |time: 40.6062
 """
