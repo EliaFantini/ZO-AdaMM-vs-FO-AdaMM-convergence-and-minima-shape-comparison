@@ -1,14 +1,18 @@
 import json
 import math
+import os
 import sys
 import torch
 import torchvision
 from torch.nn import CrossEntropyLoss
+
+from models.scalable_model import ModularModel
 from optimizers.adamm import AdaMM
 from optimizers.zo_adamm import ZO_AdaMM
 from torch.utils.data import DataLoader
 from utils import train, fix_seeds, Scheduler
 from models.small_model import SmallModel
+
 sys.path.append('..')
 
 CONFIG_PATH = 'config.json'
@@ -29,13 +33,13 @@ def main(use_default_config=True, config=None):
         config = json.load(open(CONFIG_PATH))
     if config['verbose']:
         print("Running configuration:")
-        config_keys= [v for v, m in config.items() if not (v.startswith('_')  or callable(m))]
+        config_keys = [v for v, m in config.items() if not (v.startswith('_') or callable(m))]
         for key in config_keys:
             print(f"    {key} : {config[key]}")
     fix_seeds(config['seed'])
     ###### REMOVE BEFORE LAST RUNS #######
-    #torch.backends.cudnn.deterministic = False
-    #torch.backends.cudnn.benchmark = True
+    # torch.backends.cudnn.deterministic = False
+    # torch.backends.cudnn.benchmark = True
     ##########################################
 
     device = ('cuda' if torch.cuda.is_available() else 'cpu')
@@ -55,11 +59,12 @@ def main(use_default_config=True, config=None):
             torchvision.transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010)),
         ])
 
-
         training_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-        validation_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+        validation_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True,
+                                                          transform=transform)
         training_loader = DataLoader(training_dataset, batch_size=config['batch_size'], shuffle=True, num_workers=2)
-        validation_loader = DataLoader(validation_dataset, batch_size=config['batch_size'], shuffle=False, num_workers=2)
+        validation_loader = DataLoader(validation_dataset, batch_size=config['batch_size'], shuffle=False,
+                                       num_workers=2)
 
     if config['net'] == 'b0':
         model = torchvision.models.efficientnet_b0()
@@ -79,6 +84,8 @@ def main(use_default_config=True, config=None):
         model = torchvision.models.efficientnet_b7()
     elif config['net'] == 'small':
         model = SmallModel()
+    elif config['net'] == 'scalable':
+        model = ModularModel(scale=config['scale'])
     elif config['net'] == 'mobilenet':
         model = torchvision.models.mobilenet_v3_small()
     else:
@@ -86,12 +93,13 @@ def main(use_default_config=True, config=None):
     model = model.to(device)
     criterion = CrossEntropyLoss()
 
-    if config['optimizer']=='AdaMM':
+    if config['optimizer'] == 'AdaMM':
         optimizer = torch.optim.Adam(model.parameters(), amsgrad=True)
     elif config['optimizer'] == 'Our-AdaMM':
         with torch.no_grad():
             optimizer = AdaMM(model.parameters(), lr=config['opt_params'][0],
-                              beta1=config['opt_params'][1], beta2=config['opt_params'][2],epsilon=config['opt_params'][3])
+                              beta1=config['opt_params'][1], beta2=config['opt_params'][2],
+                              epsilon=config['opt_params'][3])
     elif config['optimizer'] == 'ZO-AdaMM':
         optimizer = ZO_AdaMM(model.parameters(), lr=config['opt_params'][0],
                              betas=(config['opt_params'][1], config['opt_params'][2]),
@@ -100,7 +108,7 @@ def main(use_default_config=True, config=None):
     else:
         raise ValueError('The chosen optimizer in config is not valid')
     if config['use_scheduler']:
-        scheduler = Scheduler(optimizer, mode = 'min', factor=0.5, patience=2, verbose=True)
+        scheduler = Scheduler(optimizer, mode='min', factor=0.5, patience=2, verbose=True)
     else:
         scheduler = None
 
@@ -109,12 +117,41 @@ def main(use_default_config=True, config=None):
 
     if config['zo_optim']:
         with torch.no_grad():
-            output =  train(model, optimizer, criterion, training_loader, validation_loader, device,
-                         nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler = scheduler)
+            output = train(model, optimizer, criterion, training_loader, validation_loader, device,
+                           nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler=scheduler)
     else:
         output = train(model, optimizer, criterion, training_loader, validation_loader, device,
-                       nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler = scheduler)
-    return output
+                       nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler=scheduler)
+    return output, d
+
+
+def experiments(config, path, scales):
+    """
+    Run the experiment for all the given scales
+    :param config: config for the training
+    :param path: where to save the results
+    :param scales: what scales to use
+    """
+    for s in scales:
+        # Set the scale of the model
+        config['scale'] = s
+
+        print(f'Scale set to : {s}')
+
+        # Train the model
+        (train_losses, validation_losses, validation_accuracies, epoch_time), d = main(False, config)
+
+        # Save the results
+        results = dict()
+        results['config'] = config
+        results['train_losses'] = train_losses
+        results['validation_losses'] = validation_losses
+        results['train_accuracies'] = validation_accuracies
+        results['epoch_time'] = epoch_time
+        results['nb_params'] = d
+
+        with open(os.path.join(path, f'result_{config["optimizer"]}_{s:4f}.json'), 'w') as f:
+            json.dump(results, f, sort_keys=True, indent=4)
 
 
 opt_params_zo_adamm = [1e-03, 0.3, 0.5, 1e-12]
@@ -122,12 +159,12 @@ opt_params_adamm = [1e-3, 0.9, 0.999, 1e-8]
 
 if __name__ == '__main__':
     config = {
-        "dataset": 'mnist', # cifar, mnist
+        "dataset": 'mnist',  # cifar, mnist
         "seed": 23,
         "batch_size": 100,
         "net": 'small',
         "optimizer": 'ZO-AdaMM',
-        "opt_params": [1e-3, 0.9, 0.999, 1e-8], #lr,beta1,beta2,epsilon
+        "opt_params": [1e-3, 0.9, 0.999, 1e-8],  # lr,beta1,beta2,epsilon
         "epochs": 100,
         "zo_optim": True,
         "mu": 1e-03,

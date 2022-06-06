@@ -20,7 +20,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
 
     for epoch in range(nb_epochs):
         if zo_optim:
-            # Change the learning rate, TODO : use scheduler
+            # Change the learning rate
             optimizer.param_groups[0]['lr'] = max(lr_init / (np.sqrt(10) ** (epoch / 4.)), 1e-5)
             optimizer.param_groups[0]['mu'] = max(mu_init / (np.sqrt(10) ** (epoch / 4.)), 1e-5)
 
@@ -137,7 +137,7 @@ def fix_seeds(seed: int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-class Scheduler():
+class Scheduler:
     def __init__(self, optimizer, mode='min', factor=0.5, patience=2, verbose = False):
         self.optimizer = optimizer
         self.mode = mode
