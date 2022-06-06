@@ -4,7 +4,7 @@ from torch.optim import Optimizer
 
 class ZO_AdaMM(Optimizer):
 
-    def __init__(self, params, lr=1e-03, betas=(0.9, 0.999), mu=1e-05, eps=1e-12):
+    def __init__(self, params, lr=1e-03, betas=(0.9, 0.999), mu=1e-03, eps=1e-12):
         if lr < 0.0:
             raise ValueError("Invalid learning rate: (} - should be >= 0.0".format(lr))
         if not 0.0 <= betas[0] < 1.0:
