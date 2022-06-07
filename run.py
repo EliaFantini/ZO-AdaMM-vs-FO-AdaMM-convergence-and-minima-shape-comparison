@@ -26,8 +26,8 @@ def main(use_default_config=True, config=None, deterministic=True):
     True to use config.json as config dictionary. Default is True
     :param config: dict
     Dictionary containing all parameters, ignored if use_default_config is set to True. Default is None
-    :param zo_optim: boolean
-    True to use a zero order optimizer
+    :param deterministic: boolean
+    True to set the seed for the random methods. Default is True
     """
     if use_default_config:
         config = json.load(open(CONFIG_PATH))
