@@ -134,7 +134,7 @@ def fix_seeds(seed: int):
 
 
 class Scheduler:
-    def __init__(self, optimizer, mode='min', factor=0.5, patience=2, verbose=False, zo_optim=False):
+    def __init__(self, optimizer, mode='min', factor=0.5, patience=5, verbose=False, zo_optim=False):
         self.optimizer = optimizer
         self.mode = mode
         self.factor = factor
@@ -158,11 +158,11 @@ class Scheduler:
                 self.counter = 0
                 for i, g in enumerate(self.optimizer.param_groups):
                     prev_value = g['lr']
-                    g['lr'] = self.factor * prev_value
+                    g['lr'] = max(self.factor * prev_value, 1e-6)
 
                     if self.zo_optim:
                         prev_mu = g['mu']
-                        g['mu'] = self.factor * prev_mu
+                        g['mu'] = max(self.factor * prev_mu, 1e-6)
                         print(f"Mu reduced from {prev_mu} to {g['mu']} on param_group {i}")
 
                     if self.verbose:
