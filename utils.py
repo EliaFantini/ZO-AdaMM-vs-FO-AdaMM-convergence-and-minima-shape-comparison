@@ -5,12 +5,11 @@ from tqdm import tqdm
 
 
 def train(model, optimizer, criterion, training_loader, validation_loader,
-          device, nb_epochs, verbose, zo_optim=False, scheduler= None):
+          device, nb_epochs, verbose, zo_optim=False, scheduler=None):
     train_losses = []
     validation_losses = []
     validation_accuracies = []
     epoch_time = []
-
 
     if zo_optim:
         # global running_loss
@@ -19,10 +18,10 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
         mu_init = optimizer.param_groups[0]['mu']
 
     for epoch in range(nb_epochs):
-        if zo_optim:
+        #if zo_optim:
             # Change the learning rate
-            optimizer.param_groups[0]['lr'] = max(lr_init / (np.sqrt(10) ** (epoch / 4.)), 1e-5)
-            optimizer.param_groups[0]['mu'] = max(mu_init / (np.sqrt(10) ** (epoch / 4.)), 1e-5)
+        #    optimizer.param_groups[0]['lr'] = max(lr_init / (np.sqrt(10) ** (epoch / 4.)), 1e-5)
+        #    optimizer.param_groups[0]['mu'] = max(mu_init / (np.sqrt(10) ** (epoch / 4.)), 1e-5)
 
         start = time.time()
 
@@ -118,7 +117,6 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
             if scheduler is not None:
                 scheduler.step(validation_loss)
 
-
         epoch_time.append(time.time() - start)
         if verbose:
             print(
@@ -137,30 +135,40 @@ def fix_seeds(seed: int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+    print(f'Seed set to : {seed}')
+
+
 class Scheduler:
-    def __init__(self, optimizer, mode='min', factor=0.5, patience=2, verbose = False):
+    def __init__(self, optimizer, mode='min', factor=0.5, patience=2, verbose=False, zo_optim=False):
         self.optimizer = optimizer
         self.mode = mode
         self.factor = factor
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
+        self.zo_optim = zo_optim
+
         if self.mode == "min":
             self.best_value = float('inf')
         elif self.mode == "max":
             self.best_value = float('-inf')
+
     def step(self, value):
-        if (self.mode == "min" and value<= self.best_value) or (self.mode == "max" and value>= self.best_value):
+        if (self.mode == "min" and value <= self.best_value) or (self.mode == "max" and value >= self.best_value):
             self.best_value = value
             self.counter = 0
         else:
-            self.counter +=1
+            self.counter += 1
             if self.counter > self.patience:
                 self.counter = 0
-                for i,g in enumerate(self.optimizer.param_groups):
+                for i, g in enumerate(self.optimizer.param_groups):
                     prev_value = g['lr']
-                    g['lr'] = self.factor*prev_value
+                    g['lr'] = self.factor * prev_value
+
+                    if self.zo_optim:
+                        prev_mu = g['mu']
+                        g['mu'] = self.factor * prev_mu
+                        print(f"Mu reduced from {prev_mu} to {g['mu']} on param_group {i}")
+
                     if self.verbose:
                         print(f"Learning rate reduced from {prev_value} to {g['lr']} on param_group {i}")
-
-

@@ -18,7 +18,7 @@ sys.path.append('..')
 CONFIG_PATH = 'config.json'
 
 
-def main(use_default_config=True, config=None):
+def main(use_default_config=True, config=None, deterministic=True):
     """
     Main function that loads the data, instantiates data loaders and model, trains the model and
     outputs predictions.
@@ -36,7 +36,10 @@ def main(use_default_config=True, config=None):
         config_keys = [v for v, m in config.items() if not (v.startswith('_') or callable(m))]
         for key in config_keys:
             print(f"    {key} : {config[key]}")
-    fix_seeds(config['seed'])
+
+    if deterministic:
+        fix_seeds(config['seed'])
+
     ###### REMOVE BEFORE LAST RUNS #######
     # torch.backends.cudnn.deterministic = False
     # torch.backends.cudnn.benchmark = True
@@ -108,7 +111,7 @@ def main(use_default_config=True, config=None):
     else:
         raise ValueError('The chosen optimizer in config is not valid')
     if config['use_scheduler']:
-        scheduler = Scheduler(optimizer, mode='min', factor=0.5, patience=2, verbose=True)
+        scheduler = Scheduler(optimizer, mode='min', factor=0.5, patience=2, verbose=True, zo_optim=config['zo_optim'])
     else:
         scheduler = None
 
@@ -125,31 +128,48 @@ def main(use_default_config=True, config=None):
     return output, d
 
 
-def experiments(config, path, scales):
+def experiments(config, path, scales, nb_exp=10):
     """
     Run the experiment for all the given scales
     :param config: config for the training
     :param path: where to save the results
     :param scales: what scales to use
+    :param nb_exp: number of times we train each model
     """
+    seed_init = config['seed']
+
     for s in scales:
         # Set the scale of the model
         config['scale'] = s
 
         print(f'Scale set to : {s}')
 
-        # Train the model
-        (train_losses, validation_losses, validation_accuracies, epoch_time), d = main(False, config)
-
         # Save the results
         results = dict()
         results['config'] = config
-        results['train_losses'] = train_losses
-        results['validation_losses'] = validation_losses
-        results['train_accuracies'] = validation_accuracies
-        results['epoch_time'] = epoch_time
-        results['nb_params'] = d
+        tmp = []
 
+        config['seed'] = seed_init
+
+        for i in range(nb_exp):
+
+            # Train the model
+            (train_losses, validation_losses, validation_accuracies, epoch_time), d = main(False, config, deterministic=True)
+
+            res = dict()
+            res['train_losses'] = train_losses
+            res['validation_losses'] = validation_losses
+            res['train_accuracies'] = validation_accuracies
+            res['epoch_time'] = epoch_time
+            res['nb_params'] = d
+            res['seed'] = config['seed']
+            tmp.append(res)
+
+            config['seed'] = config['seed'] + 1
+
+        results['values'] = tmp
+
+        # Save the results in file
         with open(os.path.join(path, f'result_{config["optimizer"]}_{s:4f}.json'), 'w') as f:
             json.dump(results, f, sort_keys=True, indent=4)
 
