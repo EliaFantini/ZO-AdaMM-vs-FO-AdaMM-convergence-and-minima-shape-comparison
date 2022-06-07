@@ -24,7 +24,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
         model.train()
         training_loss = 0.0
 
-        for data in tqdm(training_loader):
+        for data in training_loader:
             inputs, labels = data
             inputs = inputs.to(device)
             labels = labels.to(device)
@@ -113,7 +113,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
                 scheduler.step(validation_loss)
 
         epoch_time.append(time.time() - start)
-        if verbose:
+        if verbose and epoch % 5 == 0:
             print(
                 f'Epoch: {epoch + 1}/{nb_epochs} |train loss: {train_losses[-1]:.4f} |test loss: {validation_losses[-1]:.4f} |acc: {validation_accuracies[-1]:.4f} |time: {epoch_time[-1]:.4f}')
 
