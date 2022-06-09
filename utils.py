@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import torch
 import time
@@ -131,6 +133,18 @@ def fix_seeds(seed: int):
     torch.backends.cudnn.benchmark = False
 
     print(f'Seed set to : {seed}')
+
+
+def read_json(path):
+    """
+    Read the given json
+    :param path: path of the json file
+    :return:
+    """
+    with open(path, 'r') as f:
+        file = json.load(f)
+
+    return file
 
 
 class Scheduler:
