@@ -1,17 +1,22 @@
 import json
+import time
 
 import numpy as np
 import torch
-import time
-from tqdm import tqdm
+from torch.nn.utils import parameters_to_vector
 
 
 def train(model, optimizer, criterion, training_loader, validation_loader,
-          device, nb_epochs, verbose, zo_optim=False, scheduler=None):
+          device, nb_epochs, verbose, zo_optim=False, scheduler=None,
+          record_weights=False, weights_path=None):
     train_losses = []
     validation_losses = []
     validation_accuracies = []
     epoch_time = []
+    d = sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+    if record_weights:
+        weights_sequence = np.zeros((nb_epochs // 5, d))
 
     if zo_optim:
         # global running_loss
@@ -115,9 +120,17 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
                 scheduler.step(validation_loss)
 
         epoch_time.append(time.time() - start)
+
+        if record_weights and epoch % 5 == 0:
+            weights_sequence[epoch // 5, :] = parameters_to_vector(model.parameters()).to('cpu').tolist()
+
         if verbose and epoch % 5 == 0:
             print(
                 f'Epoch: {epoch + 1}/{nb_epochs} |train loss: {train_losses[-1]:.4f} |test loss: {validation_losses[-1]:.4f} |acc: {validation_accuracies[-1]:.4f} |time: {epoch_time[-1]:.4f}')
+
+    if record_weights:
+        # Save weights sequence to file
+        np.save(path, weights_sequence)
 
     return train_losses, validation_losses, validation_accuracies, epoch_time
 

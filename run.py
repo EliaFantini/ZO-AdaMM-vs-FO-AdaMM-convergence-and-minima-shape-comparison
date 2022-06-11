@@ -18,7 +18,7 @@ sys.path.append('..')
 CONFIG_PATH = 'config.json'
 
 
-def main(use_default_config=True, config=None, deterministic=True):
+def main(use_default_config=True, config=None, deterministic=True, record_weights=False, weights_path=None):
     """
     Main function that loads the data, instantiates data loaders and model, trains the model and
     outputs predictions.
@@ -28,6 +28,10 @@ def main(use_default_config=True, config=None, deterministic=True):
     Dictionary containing all parameters, ignored if use_default_config is set to True. Default is None
     :param deterministic: boolean
     True to set the seed for the random methods. Default is True
+    :param record_weights: boolean
+    True to record the weights every 5 epochs
+    :param weights_path: string
+    Where to save the weights if needed
     """
     if use_default_config:
         config = json.load(open(CONFIG_PATH))
@@ -121,20 +125,24 @@ def main(use_default_config=True, config=None, deterministic=True):
     if config['zo_optim']:
         with torch.no_grad():
             output = train(model, optimizer, criterion, training_loader, validation_loader, device,
-                           nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler=scheduler)
+                           nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler=scheduler,
+                           record_weights=record_weights, weights_path=weights_path)
     else:
         output = train(model, optimizer, criterion, training_loader, validation_loader, device,
-                       nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler=scheduler)
+                       nb_epochs=config['epochs'], verbose=True, zo_optim=config['zo_optim'], scheduler=scheduler,
+                       record_weights=record_weights, weights_path=weights_path)
     return output, d
 
 
-def experiments(config, path, scales, nb_exp=10):
+def experiments(config, path, scales, nb_exp=10, record_weights=False, weights_path=None):
     """
     Run the experiment for all the given scales
     :param config: config for the training
     :param path: where to save the results
     :param scales: what scales to use
     :param nb_exp: number of times we train each model
+    :param record_weights: whether to record the weights every 5 epochs
+    :param weights_path: where to save the weights if needed
     """
     seed_init = config['seed']
 
@@ -154,7 +162,10 @@ def experiments(config, path, scales, nb_exp=10):
         for i in range(nb_exp):
 
             # Train the model
-            (train_losses, validation_losses, validation_accuracies, epoch_time), d = main(False, config, deterministic=True)
+            (train_losses, validation_losses, validation_accuracies, epoch_time), d = main(False, config,
+                                                                                           deterministic=True,
+                                                                                           record_weights=record_weights,
+                                                                                           weights_path=f'{weights_path}_{i}')
 
             res = dict()
             res['train_losses'] = train_losses
