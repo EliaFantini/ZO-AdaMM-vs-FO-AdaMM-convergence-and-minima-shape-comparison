@@ -18,7 +18,7 @@ sys.path.append('..')
 CONFIG_PATH = 'config.json'
 
 
-def main(use_default_config=True, config=None, deterministic=True, record_weights=False, weights_path=None):
+def main(use_default_config=True, config=None, deterministic=True, record_weights=False, weights_path=None, init=False):
     """
     Main function that loads the data, instantiates data loaders and model, trains the model and
     outputs predictions.
@@ -32,6 +32,8 @@ def main(use_default_config=True, config=None, deterministic=True, record_weight
     True to record the weights every 5 epochs
     :param weights_path: string
     Where to save the weights if needed
+    :param init: boolean
+    Whether to initialize the model weights
     """
     if use_default_config:
         config = json.load(open(CONFIG_PATH))
@@ -92,7 +94,7 @@ def main(use_default_config=True, config=None, deterministic=True, record_weight
     elif config['net'] == 'small':
         model = SmallModel()
     elif config['net'] == 'scalable':
-        model = ModularModel(scale=config['scale'])
+        model = ModularModel(scale=config['scale'], init=init)
     elif config['net'] == 'mobilenet':
         model = torchvision.models.mobilenet_v3_small()
     else:
@@ -165,7 +167,8 @@ def experiments(config, path, scales, nb_exp=10, record_weights=False, weights_p
             (train_losses, validation_losses, validation_accuracies, epoch_time), d = main(False, config,
                                                                                            deterministic=True,
                                                                                            record_weights=record_weights,
-                                                                                           weights_path=f'{weights_path}_{i}')
+                                                                                           weights_path=f'{weights_path}_{i}',
+                                                                                           init=True)
 
             res = dict()
             res['train_losses'] = train_losses

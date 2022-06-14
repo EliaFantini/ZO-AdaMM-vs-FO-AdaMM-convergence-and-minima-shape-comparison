@@ -16,13 +16,20 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
     d = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     if record_weights:
-        weights_sequence = np.zeros((nb_epochs // 5, d))
+        names_sizes = [(name, p.numel()) for name, p in model.named_parameters()]
+        weights_sequences = dict()
+        for n, s in names_sizes:
+            weights_sequences[n] = np.zeros((nb_epochs+1, s))
 
     if zo_optim:
         # global running_loss
         running_loss = 0
         lr_init = optimizer.param_groups[0]['lr']
         mu_init = optimizer.param_groups[0]['mu']
+
+    if record_weights:
+        for n, p in model.named_parameters():
+            weights_sequences[n][0, :] = parameters_to_vector(p).to('cpu').tolist()
 
     for epoch in range(nb_epochs):
         start = time.time()
@@ -121,8 +128,9 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
 
         epoch_time.append(time.time() - start)
 
-        if record_weights and epoch % 5 == 0:
-            weights_sequence[epoch // 5, :] = parameters_to_vector(model.parameters()).to('cpu').tolist()
+        if record_weights:
+            for n, p in model.named_parameters():
+                weights_sequences[n][epoch+1, :] = parameters_to_vector(p).to('cpu').tolist()
 
         if verbose and epoch % 5 == 0:
             print(
@@ -130,7 +138,8 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
 
     if record_weights:
         # Save weights sequence to file
-        np.save(path, weights_sequence)
+        for n, p in weights_sequences.items():
+            np.save(f'{n}_{weights_path}', p)
 
     return train_losses, validation_losses, validation_accuracies, epoch_time
 
