@@ -54,8 +54,8 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
                     grad_est = []
 
                     # Generate a random direction uniformly on the unit ball or with a gaussian distribution
-                    # u = torch.normal(mean = torch.zeros(size_params),std = 100)
-                    u = 2 * (torch.rand(size_params) - 0.5)  # need small modif in order to be on the unit sphere
+                    u = torch.normal(mean = torch.zeros(size_params),std = 100)
+                    #u = 2 * (torch.rand(size_params) - 0.5)  # need small modif in order to be on the unit sphere
                     u.div_(torch.norm(u, "fro"))
                     u = u.to(device)
 
