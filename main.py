@@ -79,28 +79,10 @@ def main(use_default_config=True, config=None, deterministic=True, record_weight
                                        num_workers=2)
 
     # Prepare the model
-    if config['net'] == 'b0':
-        model = torchvision.models.efficientnet_b0()
-    elif config['net'] == 'b1':
-        model = torchvision.models.efficientnet_b1()
-    elif config['net'] == 'b2':
-        model = torchvision.models.efficientnet_b2()
-    elif config['net'] == 'b3':
-        model = torchvision.models.efficientnet_b3()
-    elif config['net'] == 'b4':
-        model = torchvision.models.efficientnet_b4()
-    elif config['net'] == 'b5':
-        model = torchvision.models.efficientnet_b5()
-    elif config['net'] == 'b6':
-        model = torchvision.models.efficientnet_b6()
-    elif config['net'] == 'b7':
-        model = torchvision.models.efficientnet_b7()
     elif config['net'] == 'small':
         model = SmallModel()
     elif config['net'] == 'scalable':
         model = ModularModel(scale=config['scale'], init=init)
-    elif config['net'] == 'mobilenet':
-        model = torchvision.models.mobilenet_v3_small()
     else:
         raise ValueError('The chosen net in config is not valid')
     model = model.to(device)
