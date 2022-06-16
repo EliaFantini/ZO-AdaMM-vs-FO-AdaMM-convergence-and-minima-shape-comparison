@@ -59,9 +59,6 @@ class AdaMM(Optimizer):
                     state['gradient_second_moment'].mul_(beta2).addcmul_(p.grad.data, p.grad.data, value=(1.0 - beta2))
                     state['step'] += 1
 
-                    #grad_avg_hat = state['gradient_avg'] / (1 - beta1 ** state['step'])
-                    #grad_second_moment_hat = state['gradient_second_moment'] / (1 - beta2 ** state['step'])
-
                     state['gradient_max_second_moment_hat'] = torch.maximum(state['gradient_max_second_moment'],
                                                                             state['gradient_second_moment'])
 

@@ -18,6 +18,7 @@ class ModularModel(nn.Module):
         self.fc3 = nn.Linear(max(10,int(sqrt(scale*120))), 10)
 
         if init:
+            # Initialize the weights and bias of the model
             nn.init.xavier_normal_(self.conv1.weight)
             nn.init.xavier_normal_(self.conv2.weight)
             nn.init.xavier_normal_(self.fc1.weight)

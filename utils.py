@@ -9,27 +9,41 @@ from torch.nn.utils import parameters_to_vector
 def train(model, optimizer, criterion, training_loader, validation_loader,
           device, nb_epochs, verbose, zo_optim=False, scheduler=None,
           record_weights=False, weights_path=None):
+    """
+    Train the given model.
+    :param model: model to train
+    :param optimizer: optimizer to use
+    :param criterion: loss function
+    :param training_loader: train data loader
+    :param validation_loader: validation data loader
+    :param device: 'cpu' or 'cuda'
+    :param nb_epochs: number of epochs for training
+    :param verbose: whether to print progress information
+    :param zo_optim: whether ZO optimization is used
+    :param scheduler: learning rate scheduler
+    :param record_weights: whether to record the weights at each epoch
+    :param weights_path: where to save the weights if needed
+    :return: train losses, validation losses, validation accuracies, times per epoch
+    """
     train_losses = []
     validation_losses = []
     validation_accuracies = []
     epoch_time = []
-    d = sum(p.numel() for p in model.parameters() if p.requires_grad)
 
     if record_weights:
+        # Initialize structures to record the weights
         names_sizes = [(name, p.numel()) for name, p in model.named_parameters()]
         weights_sequences = dict()
         for n, s in names_sizes:
-            weights_sequences[n] = np.zeros((nb_epochs+1, s))
+            weights_sequences[n] = np.zeros((nb_epochs + 1, s))
 
-    if zo_optim:
-        # global running_loss
-        running_loss = 0
-        lr_init = optimizer.param_groups[0]['lr']
-        mu_init = optimizer.param_groups[0]['mu']
-
-    if record_weights:
+        # Record the original weights before training
         for n, p in model.named_parameters():
             weights_sequences[n][0, :] = parameters_to_vector(p).to('cpu').tolist()
+
+    if zo_optim:
+        # Global running_loss
+        running_loss = 0
 
     for epoch in range(nb_epochs):
         start = time.time()
@@ -42,11 +56,14 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
             inputs, labels = data
             inputs = inputs.to(device)
             labels = labels.to(device)
+
+            # Forward pass
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
 
             if zo_optim:
+                # Closure used in the ZO optimizer
                 running_loss = running_loss + loss.item()
                 batch_size = labels.size(0)
 
@@ -54,15 +71,14 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
                     grad_est = []
 
                     # Generate a random direction uniformly on the unit ball or with a gaussian distribution
-                    u = torch.normal(mean = torch.zeros(size_params),std = 100)
-                    #u = 2 * (torch.rand(size_params) - 0.5)  # need small modif in order to be on the unit sphere
+                    u = torch.normal(mean=torch.zeros(size_params), std=100)
+                    # u = 2 * (torch.rand(size_params) - 0.5)  # need small modif in order to be on the unit sphere
                     u.div_(torch.norm(u, "fro"))
                     u = u.to(device)
 
                     # save the state of the model
                     model_init = dict(model.state_dict())
                     model_init_parameters = model.parameters()
-                    grad_norm = 0
 
                     # we add to the initial parameters a random perturbation times \mu
                     start_ind = 0
@@ -124,13 +140,15 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
             validation_accuracies.append(correct_preds / total_preds)
 
             if scheduler is not None:
+                # Do a learning rate scheduler step
                 scheduler.step(validation_loss)
 
         epoch_time.append(time.time() - start)
 
         if record_weights:
+            # Record the weights of the model
             for n, p in model.named_parameters():
-                weights_sequences[n][epoch+1, :] = parameters_to_vector(p).to('cpu').tolist()
+                weights_sequences[n][epoch + 1, :] = parameters_to_vector(p).to('cpu').tolist()
 
         if verbose and epoch % 5 == 0:
             print(
@@ -139,7 +157,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
     if record_weights:
         # Save weights sequence to file
         for n, p in weights_sequences.items():
-            np.save(f'{n}_{weights_path}', p)
+            np.save(f'{weights_path[:-2]}_{n}_{weights_path[-1]}', p)
 
     return train_losses, validation_losses, validation_accuracies, epoch_time
 
@@ -147,7 +165,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
 def fix_seeds(seed: int):
     """
     Fixes seed for all random functions
-    @param seed: int
+    :param seed: int
         Seed to be fixed
     """
     torch.manual_seed(seed)
@@ -161,45 +179,9 @@ def read_json(path):
     """
     Read the given json
     :param path: path of the json file
-    :return:
+    :return: json file as a dict
     """
     with open(path, 'r') as f:
         file = json.load(f)
 
     return file
-
-
-class Scheduler:
-    def __init__(self, optimizer, mode='min', factor=0.5, patience=5, verbose=False, zo_optim=False):
-        self.optimizer = optimizer
-        self.mode = mode
-        self.factor = factor
-        self.patience = patience
-        self.verbose = verbose
-        self.counter = 0
-        self.zo_optim = zo_optim
-
-        if self.mode == "min":
-            self.best_value = float('inf')
-        elif self.mode == "max":
-            self.best_value = float('-inf')
-
-    def step(self, value):
-        if (self.mode == "min" and value <= self.best_value) or (self.mode == "max" and value >= self.best_value):
-            self.best_value = value
-            self.counter = 0
-        else:
-            self.counter += 1
-            if self.counter > self.patience:
-                self.counter = 0
-                for i, g in enumerate(self.optimizer.param_groups):
-                    prev_value = g['lr']
-                    g['lr'] = max(self.factor * prev_value, 1e-6)
-
-                    if self.zo_optim:
-                        prev_mu = g['mu']
-                        g['mu'] = max(self.factor * prev_mu, 1e-6)
-                        print(f"Mu reduced from {prev_mu} to {g['mu']} on param_group {i}")
-
-                    if self.verbose:
-                        print(f"Learning rate reduced from {prev_value} to {g['lr']} on param_group {i}")

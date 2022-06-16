@@ -27,7 +27,7 @@ class ZO_AdaMM(Optimizer):
         for group in self.param_groups:
             beta1, beta2 = group['betas']
 
-            # closure return the approximation for the gradient, we have to add some "option" to this function
+            # Closure return the approximation for the gradient
             grad_est = closure(self.size_params, group["mu"])
 
             for p, grad in zip(group['params'], grad_est):
