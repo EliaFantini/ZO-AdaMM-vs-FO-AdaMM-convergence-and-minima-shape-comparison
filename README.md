@@ -44,7 +44,7 @@ The results can be reproduced as follows :
 Remarks : 
 - You need to create the folders ```./results``` and ```./results/weights``` if they
 do not exist in your system.
-- The zero order optimization method can only be used on the CPU as it produced behaviors on different machines when using the GPU. If you still want to use the GPU, you can comment line 54 and decomment line 55 in ```main.py```.
+- The zero order optimization method can only be used on the CPU as it produced different behaviors on different machines when using the GPU, with some GPU achieving a lower accuracy and higher losses compared to CPU results, even while using same random seeds. If you still want to use the GPU, you can comment line 54 and decomment line 55 in ```main.py```.
 
 ## Authors
 - Kieran Vaudaux
