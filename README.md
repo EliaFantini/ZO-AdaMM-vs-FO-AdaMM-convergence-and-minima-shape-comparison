@@ -9,7 +9,7 @@ This method was proposed in *ZO-AdaMM: Zeroth-Order Adap-
 tive Momentum Method for Black-Box Optimization*, Xiangyi Chen et al.
 
 In particular, we empirically studied this optimizer with simple CNN ranging from 1'400 to more
-than 2.5 millions parameters on well known classification task of the MNIST dataset.
+than 2.5 millions parameters on the well known classification task of the MNIST dataset.
 
 ## Structure of the repository
 
