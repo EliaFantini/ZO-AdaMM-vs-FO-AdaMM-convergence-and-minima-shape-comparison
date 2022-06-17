@@ -71,8 +71,16 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
                     grad_est = []
 
                     # Generate a random direction uniformly on the unit ball or with a gaussian distribution
-                    #u = torch.normal(mean=torch.zeros(size_params), std=100)
-                    u = 2 * (torch.rand(size_params) - 0.5)  # need small modif in order to be on the unit sphere
+
+                    ## ---
+                    # The correct way to generate a uniform variable on the sphere is by generating u in this way and then projecting u onto the sphere.
+                    # As we did not immediately find out how to have a uniform variable on the sphere we first used the way that is not commented on.
+                    # We found that after doing the experiments how to do it, but after testing it did not change the performance of our algorithm,
+                    # so we left the first version for the sake of reproducibility.
+
+                    # u = torch.normal(mean=torch.zeros(size_params), std=1)
+                    ## ---
+                    u = 2 * (torch.rand(size_params) - 0.5)
                     u.div_(torch.norm(u, "fro"))
                     u = u.to(device)
 
@@ -92,11 +100,7 @@ def train(model, optimizer, criterion, training_loader, validation_loader,
                     loss_random = criterion(output2, labels)
 
                     # compute the "gradient norm"
-                    # when u is uniform random variable
                     grad_norm = size_params * (loss_random - loss) / mu
-
-                    # when u is Gaussian random variable
-                    # grad_norm += (loss_random-loss_init)/mu
 
                     start_ind = 0
                     for param_tensor in model_init_parameters:
