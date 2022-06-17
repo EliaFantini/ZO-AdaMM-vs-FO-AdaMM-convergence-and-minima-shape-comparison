@@ -41,8 +41,10 @@ The results can be reproduced as follows :
 - Run the ```experiments.ipynb``` to produce the data
 - Run the ```analysis.ipynb``` to produce the plots used in the report
 
-Please note that you need to create the folders ```./results``` and ```./results/weights``` if they
+Remarks : 
+- You need to create the folders ```./results``` and ```./results/weights``` if they
 do not exist in your system.
+- The zero order optimization method can only be used on the CPU as it produced behaviors on different machines when using the GPU. If you still want to use the GPU, you can comment line 54 and decomment line 55 in ```main.py```.
 
 ## Authors
 - Kieran Vaudaux

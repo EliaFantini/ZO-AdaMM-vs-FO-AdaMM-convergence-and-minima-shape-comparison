@@ -52,6 +52,7 @@ def main(use_default_config=True, config=None, deterministic=True, record_weight
 
     # Use GPU if available
     device = ('cuda' if torch.cuda.is_available() and not config['zo_optim'] else 'cpu')
+    #device = ('cuda' if torch.cuda.is_available() else 'cpu')
     if config['verbose']:
         print("Device used: ", device, '\n')
 
