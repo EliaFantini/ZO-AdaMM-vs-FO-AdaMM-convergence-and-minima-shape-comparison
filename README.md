@@ -63,6 +63,7 @@ Since this ratio increases with the number of parameters *d*, this seem to indic
 <img width="600" alt="cc" src="https://user-images.githubusercontent.com/62103572/183624158-b048ba12-a62a-4591-a464-c251e4d2085b.png">
 </p>
 
+
 Finally, we tried to project
 the weights of each individual filter of the CNN into a 2-dimensional
 space using the t-SNE algorithm, which tries to preserve
@@ -71,6 +72,11 @@ high dimensions. As the following image shows, the learned weights to which the 
 
 <p align="center">
 <img width="600" alt="bb" src="https://user-images.githubusercontent.com/62103572/183623250-69231021-4e58-412e-92ed-a3d7c92b5365.png">
+</p>
+
+The next image shows the actual filters learned, printed as grey-scale images. As we can see, they don't show similar patterns.
+<p align="center">
+<img width="400" alt="dd" src="https://user-images.githubusercontent.com/62103572/183628281-a4b9a7d0-2648-4ff6-a52b-df76c1cf9969.png">
 </p>
 
 Although the fact that the parameters converge to quite distinct
