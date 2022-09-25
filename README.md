@@ -157,5 +157,5 @@ do not exist in your system.
 Python, Pytorch. Deep learning knowledge, Machine Learning optimization knowledge, implementation of first order AdaMM (AMSGrad) and zero order AdaMM optimizers, as well as ZO-SGD. Study and analysis of convergence rates, minima shape with t-SNE alogrithm, visual analysis of CNN's learned filters, cosine similarity.
 
 ## 🔗 Links
-[![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://github.com/EliaFantini/)
+[![portfolio](https://img.shields.io/badge/my_portfolio-000?style=for-the-badge&logo=ko-fi&logoColor=white)](https://eliafantini.github.io/Portfolio/)
 [![linkedin](https://img.shields.io/badge/linkedin-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/-elia-fantini/)
